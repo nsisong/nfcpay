@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:nfc_manager/nfc_manager.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,8 @@ class CircleTick extends StatelessWidget {
   final double size;
   final Color color;
 
-  const CircleTick({super.key, required this.size, required this.color});
+  const CircleTick({Key? key, required this.size, required this.color})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +29,11 @@ class CircleTick extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        // Add decoration for the border
         shape: BoxShape.circle,
-        border:
-            Border.all(color: Colors.green, width: 2), // Adjust width as needed
+        border: Border.all(color: Colors.green, width: 2),
       ),
       child: Stack(
         children: [
-          // Make the inside white
           CircleAvatar(
             backgroundColor: Colors.white,
             radius: size / 2,
@@ -55,14 +54,34 @@ class CircleTick extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({Key? key});
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Add variables and functions here
+  String _tagData = 'Place Phone close to NFC Reader ..';
+
+  @override
+  void initState() {
+    super.initState();
+    _initNFC();
+  }
+
+  Future<void> _initNFC() async {
+    try {
+      await NfcManager.instance.startSession(
+        onDiscovered: (NfcTag tag) async {
+          setState(() {
+            _tagData = tag.data.toString();
+          });
+        },
+      );
+    } catch (e) {
+      print('Error initializing NFC: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,18 +89,24 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: const Text('Pay for Fuel'),
       ),
-      body: const Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround, // Distribute evenly
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Center(
             child: CircleTick(size: 100, color: Colors.green),
           ),
           Text(
-            'Place Phone close to NFC Reader ..',
-            style: TextStyle(fontSize: 16), // Adjust font size as needed
+            _tagData,
+            style: TextStyle(fontSize: 16),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    NfcManager.instance.stopSession();
+    super.dispose();
   }
 }
