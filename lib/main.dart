@@ -31,6 +31,7 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
   FlutterBlue flutterBlue = FlutterBlue.instance;
   BluetoothDevice? _connectedDevice;
   BluetoothCharacteristic? _writeCharacteristic;
+  BluetoothCharacteristic? _readCharacteristic;
 
   @override
   void initState() {
@@ -100,7 +101,16 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
                     in service.characteristics) {
                   if (characteristic.properties.write) {
                     _writeCharacteristic = characteristic;
-                    break;
+                    // break;
+                  } else if (characteristic.properties.notify) {
+                    _readCharacteristic = characteristic;
+                    _readCharacteristic!.setNotifyValue(true).then((_) {
+                      // Listen to incoming notifications
+                      _readCharacteristic!.value.listen((value) {
+                        // Handle incoming data here
+                        print('Received data: ${utf8.decode(value)}');
+                      });
+                    });
                   }
                 }
               }
