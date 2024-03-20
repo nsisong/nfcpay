@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'main.dart'; // Importing CircleTick widget from main.dart
 
 class DispenserControl extends StatefulWidget {
+  final Function(String) sendData;
+
+  DispenserControl({required this.sendData});
+
   @override
   _DispenserControlState createState() => _DispenserControlState();
 }
@@ -45,7 +50,7 @@ class _DispenserControlState extends State<DispenserControl> {
               Padding(
                 padding: EdgeInsets.all(100),
                 child: TextField(
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.text,
                   decoration: InputDecoration(
                     labelText: "Enter Volume (Liters)",
                   ),
@@ -61,6 +66,8 @@ class _DispenserControlState extends State<DispenserControl> {
                   // Implement logic to send the entered volume to the dispenser (replace with your specific logic)
                   print("Dispensing $enteredVolume liters...");
                   // Clear the entered volume after sending
+                  widget.sendData(enteredVolume);
+
                   setState(() {
                     enteredVolume = "";
                   });

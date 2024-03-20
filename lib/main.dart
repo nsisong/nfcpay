@@ -86,8 +86,11 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
             // Stop scanning once the device is found
             flutterBlue.stopScan();
             _connectedDevice = result.device;
-            Navigator.push(context,
-                MaterialPageRoute(builder: (context) => DispenserControl()));
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        DispenserControl(sendData: sendData)));
             result.device.connect().then((_) async {
               // Once connected, discover services and characteristics
               List<BluetoothService> services =
