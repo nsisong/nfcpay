@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'my_home_page.dart'; // Importing MyHomePage widget
 import 'screen3.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(MyApp());
@@ -24,10 +26,10 @@ class MyApp extends StatelessWidget {
 
 class NFCReaderPage extends StatefulWidget {
   @override
-  _NFCReaderPageState createState() => _NFCReaderPageState();
+  NFCReaderPageState createState() => NFCReaderPageState();
 }
 
-class _NFCReaderPageState extends State<NFCReaderPage> {
+class NFCReaderPageState extends State<NFCReaderPage> {
   FlutterBlue flutterBlue = FlutterBlue.instance;
   BluetoothDevice? _connectedDevice;
   BluetoothCharacteristic? _writeCharacteristic;
@@ -38,6 +40,29 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
     super.initState();
     _initNFC();
     // scanForDevices();
+    requestPermissions();
+  }
+
+  Future<void> requestPermissions() async {
+    final bluetoothPermission = await Permission.bluetooth.request();
+    if (bluetoothPermission.isGranted) {
+      print('Bluetooth permission granted');
+      final scanPermission = await Permission.bluetoothScan.request();
+      if (scanPermission.isGranted) {
+        print('Bluetooth scan permission granted');
+        final connectPermission = await Permission.bluetoothConnect.request();
+        if (connectPermission.isGranted) {
+          print('Bluetooth connect permission granted');
+          // You can start scanning for devices or establish connections here.
+        } else {
+          print('Bluetooth connect permission denied');
+        }
+      } else {
+        print('Bluetooth scan permission denied');
+      }
+    } else {
+      print('Bluetooth permission denied');
+    }
   }
 
   Future<void> _initNFC() async {
@@ -87,11 +112,17 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
             // Stop scanning once the device is found
             flutterBlue.stopScan();
             _connectedDevice = result.device;
-            Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        DispenserControl(sendData: sendData)));
+
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (context) => DispenserControl(
+            //       sendData: sendData,
+            //       receivedData:
+            //           startReadingBluetoothData(), // Call startReadingBluetoothData to get the stream
+            //     ),
+            //   ),
+            // );
             result.device.connect().then((_) async {
               // Once connected, discover services and characteristics
               List<BluetoothService> services =
@@ -104,16 +135,22 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
                     // break;
                   } else if (characteristic.properties.notify) {
                     _readCharacteristic = characteristic;
-                    _readCharacteristic!.setNotifyValue(true).then((_) {
-                      // Listen to incoming notifications
-                      _readCharacteristic!.value.listen((value) {
-                        // Handle incoming data here
-                        print('Received data: ${utf8.decode(value)}');
-                      });
+                    startReadingBluetoothData().listen((data) {
+                      // print('dat: $data');
                     });
                   }
                 }
               }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DispenserControl(
+                    sendData: sendData,
+                    receivedData:
+                        startReadingBluetoothData(), // Call startReadingBluetoothData to get the stream
+                  ),
+                ),
+              );
             }).catchError((error) {
               print('Failed to connect to device: $error');
             });
@@ -124,6 +161,27 @@ class _NFCReaderPageState extends State<NFCReaderPage> {
     } catch (error) {
       print('Error scanning for devices: $error');
     }
+  }
+
+  Stream<String> startReadingBluetoothData() {
+    StreamController<String> controller = StreamController<String>();
+
+    if (_readCharacteristic != null) {
+      _readCharacteristic!.setNotifyValue(true).then((_) {
+        _readCharacteristic!.value.listen((List<int>? value) {
+          if (value != null) {
+            String receivedData = utf8.decode(value);
+            // print('main : $receivedData');
+            controller.add(receivedData);
+          }
+        });
+      }).catchError((error) {
+        print('Error setting notify value: $error');
+        controller.addError(error); // Add error to the stream if encountered
+      });
+    }
+
+    return controller.stream;
   }
 
   void sendData(String data) {
