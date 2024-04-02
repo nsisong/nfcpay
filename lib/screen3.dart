@@ -24,6 +24,7 @@ class _DispenserControlState extends State<DispenserControl> {
   void initState() {
     super.initState();
     widget.receivedData.listen((data) {
+      print('data1: $data'); // Print received data
       setState(() {
         dispenserId = data; // Update dispenserId with received data
         if (data == 'Invalid Request:' || data == '') {

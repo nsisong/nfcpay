@@ -112,17 +112,6 @@ class NFCReaderPageState extends State<NFCReaderPage> {
             // Stop scanning once the device is found
             flutterBlue.stopScan();
             _connectedDevice = result.device;
-
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => DispenserControl(
-            //       sendData: sendData,
-            //       receivedData:
-            //           startReadingBluetoothData(), // Call startReadingBluetoothData to get the stream
-            //     ),
-            //   ),
-            // );
             result.device.connect().then((_) async {
               // Once connected, discover services and characteristics
               List<BluetoothService> services =
@@ -136,7 +125,7 @@ class NFCReaderPageState extends State<NFCReaderPage> {
                   } else if (characteristic.properties.notify) {
                     _readCharacteristic = characteristic;
                     startReadingBluetoothData().listen((data) {
-                      // print('dat: $data');
+                      print('dat: $data');
                     });
                   }
                 }
@@ -186,8 +175,9 @@ class NFCReaderPageState extends State<NFCReaderPage> {
 
   void sendData(String data) {
     if (_writeCharacteristic != null) {
-      List<int> bytes = utf8.encode(data + '\n');
-      _writeCharacteristic!.write(bytes);
+      List<int> bytes =
+          utf8.encode(data + '\r\n'); // Encoding the string to bytes
+      _writeCharacteristic!.write(bytes); // Writing bytes to the characteristic
     }
   }
 
