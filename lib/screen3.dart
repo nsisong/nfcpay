@@ -1,19 +1,40 @@
 import 'package:flutter/material.dart';
-import 'main.dart'; // Importing CircleTick widget from main.dart
+import 'dart:convert';
+// import 'dart:async';
 
 class DispenserControl extends StatefulWidget {
+  // BluetoothCharacteristic? _readCharacteristic;
   final Function(String) sendData;
+  final Stream<String> receivedData; // Add this line
 
-  DispenserControl({required this.sendData});
+  DispenserControl(
+      {required this.sendData,
+      required this.receivedData}); // Update constructor
 
   @override
   _DispenserControlState createState() => _DispenserControlState();
 }
 
 class _DispenserControlState extends State<DispenserControl> {
-  String dispenserId = "6746179";
+  String dispenserId = '';
   double currentScaleReading = 50.0; // Liters
   String enteredVolume = "";
+
+  @override
+  void initState() {
+    super.initState();
+    widget.receivedData.listen((data) {
+      print('data1: $data'); // Print received data
+      setState(() {
+        dispenserId = data; // Update dispenserId with received data
+        if (data == 'Invalid Request:' || data == '') {
+          widget.sendData("HLO 1234\n"); // Send specific command
+          print('data: $data'); // Print received data
+        }
+        print('Received data: $data'); // Print received data
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +86,7 @@ class _DispenserControlState extends State<DispenserControl> {
                 onPressed: () {
                   // Implement logic to send the entered volume to the dispenser (replace with your specific logic)
                   print("Dispensing $enteredVolume liters...");
+                  // receiveData();
                   // Clear the entered volume after sending
                   widget.sendData(enteredVolume);
 
